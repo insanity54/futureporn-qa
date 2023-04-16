@@ -75,9 +75,10 @@ fastify.listen({
 
 
 
-function myFunction(data) {
+function pinIpfsContent(data) {
   // implement your webhook processing logic here
-  console.log(data)
+  console.log(`videoSrcHash:${data.entry.videoSrcHash}, video240Hash:${data.entry.video240Hash}, thiccHash:${dta.entry.thiccHash}`)
+  
 }
 
 
@@ -93,21 +94,23 @@ const schema = {
   body: webhookBodyJsonSchema,
 }
 
+// Declare a webhook route
+// This is used by Strapi.
+// When a new VOD is created, Strapi GETs the route
+// QA responds by adding the IPFS hash
 fastify.post('/webhook', { schema }, async (request, reply) => {
   reply.type('application/json')
   // we can use the `request.body` object to get the data sent by the client
   // const result = await collection.insertOne({ animal: request.body.animal })
   // return result
-  console.log(request.body)
+  const body = request?.body
+  console.log(body)
+  pinIpfsContent()
   return {
     message: 'hi'
   }
 })
 
-// Declare a webhook route
-// This is used by Strapi.
-// When a new VOD is created, Strapi GETs the route
-// QA responds by adding the IPFS hash
 // fastify.post('/webhook', async function (request, reply) {
 //   reply.type('application/json')
 //   logger.log({ level: 'info', message: `/webhook visited` });
