@@ -70,6 +70,7 @@ fastify.listen({ port: process.env.PORT || 5000 }, function (err, address) {
 fastify.get('/webhook', async function (request, reply) {
     reply.type('application/json')
     const missing = await checkPins()
+    logger.log({ level: 'info', message: `/webhook visited` });
     return {
         missing: missing,
         complete: (missing.length === 0),
