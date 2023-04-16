@@ -14,7 +14,7 @@ Quality Assurance
 */
 
 
-import dotenv from 'dotenv'
+import * as dotenv from 'dotenv'
 dotenv.config()
 import { Client, GatewayIntentBits } from 'discord.js'
 import { loggerFactory } from "./lib/logger.js"
