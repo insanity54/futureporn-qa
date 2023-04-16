@@ -57,7 +57,7 @@ client.login(process.env.DISCORD_BOT_TOKEN)
 // Run the server!
 fastify.listen({ 
   port: process.env.PORT || 5000,
-  address: '0.0.0.0'
+  host: '0.0.0.0'
 }, function (err, address) {
   if (err) {
     logger.log({ level: 'error', message: err })
