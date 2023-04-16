@@ -20,6 +20,7 @@ import { Client, GatewayIntentBits } from 'discord.js'
 import { loggerFactory } from "./lib/logger.js"
 import Fastify from 'fastify'
 import Cluster from './lib/Cluster.js'
+import S from 'fluent-json-schema'
 import { ipfsHashRegex } from './lib/constants.js'
 import * as data from './package.json' assert { type: "json" }
 const version = data.default.version
@@ -28,7 +29,9 @@ if (process.env.DISCORD_CLIENT_ID === undefined) throw new Error('DISCORD_CLIENT
 if (process.env.DISCORD_CLIENT_SECRET === undefined) throw new Error('DISCORD_CLIENT_SECRET undefined in env');
 if (process.env.DISCORD_BOT_TOKEN === undefined) throw new Error('DISCORD_BOT_TOKEN undefined in env');
 if (process.env.DISCORD_CHATOPS_CHANNEL_ID === undefined) throw new Error('DISCORD_CHATOPS_CHANNEL_ID undefined in env');
-
+if (process.env.IPFS_CLUSTER_HTTP_API_MULTIADDR === undefined) throw new Error('IPFS_CLUSTER_HTTP_API_MULTIADDR undef in env');
+if (process.env.IPFS_CLUSTER_HTTP_API_USERNAME === undefined) throw new Error('IPFS_CLUSTER_HTTP_API_USERNAME undef in env');
+if (process.env.IPFS_CLUSTER_HTTP_API_PASSWORD === undefined) throw new Error('IPFS_CLUSTER_HTTP_API_PASSWORD undef in env');
 
 
 const logger = loggerFactory({
@@ -50,6 +53,10 @@ client.on('ready', () => {
 
 client.login(process.env.DISCORD_BOT_TOKEN)
 
+const cluster = new Cluster({
+  username: process.env.IPFS_CLUSTER_HTTP_API_USERNAME,
+  password: process.env.IPFS_CLUSTER_HTTP_API_PASSWORD
+})
 // channel.send('Task complete!');
 
 
@@ -66,17 +73,49 @@ fastify.listen({
   logger.log({ level: 'info', message: `QA server ${version} listening on ${address}` })
 })
 
+
+
+function myFunction(data) {
+  // implement your webhook processing logic here
+  console.log(data)
+}
+
+
+
+const webhookBodyJsonSchema = S.object()
+  .prop('event', S.string()).required()
+  .prop('model', S.string()).required()
+  .prop('entry', S.object()).required()
+  .valueOf()
+
+
+const schema = {
+  body: webhookBodyJsonSchema,
+}
+
+fastify.post('/webhook', { schema }, async (request, reply) => {
+  reply.type('application/json')
+  // we can use the `request.body` object to get the data sent by the client
+  // const result = await collection.insertOne({ animal: request.body.animal })
+  // return result
+  console.log(request.body)
+  return {
+    message: 'hi'
+  }
+})
+
 // Declare a webhook route
 // This is used by Strapi.
 // When a new VOD is created, Strapi GETs the route
 // QA responds by adding the IPFS hash
-fastify.get('/webhook', async function (request, reply) {
-    reply.type('application/json')
-    const missing = await checkPins()
-    logger.log({ level: 'info', message: `/webhook visited` });
-    return {
-        missing: missing,
-        complete: (missing.length === 0),
-        message: 'These are the pins listed on the Futureporn API that are currently missing from the IPFS cluster'
-    }
-})
+// fastify.post('/webhook', async function (request, reply) {
+//   reply.type('application/json')
+//   logger.log({ level: 'info', message: `/webhook visited` });
+//   const validationResult = isValidWebhook(request.body)
+//   if (!validationResult.valid) {
+//     return reply.code(400).send({ message: validationResult.message })
+//   }
+//   // Run your function with the valid webhook data
+//   myFunction(body)
+//   reply.send({ message: 'Webhook received successfully' })
+// })

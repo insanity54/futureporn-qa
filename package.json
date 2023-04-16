@@ -8,6 +8,7 @@
     "discord.js": "^14.9.0",
     "dotenv": "^16.0.3",
     "fastify": "^4.11.0",
+    "fluent-json-schema": "^4.1.0",
     "formdata-node": "^5.0.0",
     "got": "^12.6.0",
     "winston": "^3.8.2"
