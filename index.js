@@ -2,10 +2,9 @@
 
 Quality Assurance
 
-  * [ ] serve a webhook
-  * [ ] when webhook is hit, do a thing
-  * [ ] when doing a thing, GET /api/vods
-  * [ ] for each vod, `ipfs pin add` the 
+  * [x] serve a webhook
+  * [x] when webhook is hit, do a thing
+  * [x] `ipfs pin add` the 
   * [ ] videoSrcHash
   * [ ] video240Hash
   * [ ] thiccHash
@@ -44,16 +43,19 @@ const fastify = Fastify({
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
+
+
 client.on('ready', () => {
   logger.log({ level: 'info', message: `Logged in as ${client.user.tag}!` });
 
-  const channel = client.channels.cache.get(process.env.DISCORD_CHATOPS_CHANNEL_ID);
+  
   // channel.send('Hello Worldy!');
 });
 
 client.login(process.env.DISCORD_BOT_TOKEN)
 
 const cluster = new Cluster({
+  uri: 'https://cluster.sbtp.xyz:9094',
   username: process.env.IPFS_CLUSTER_HTTP_API_USERNAME,
   password: process.env.IPFS_CLUSTER_HTTP_API_PASSWORD
 })
@@ -75,10 +77,14 @@ fastify.listen({
 
 
 
-function pinIpfsContent(data) {
-  // implement your webhook processing logic here
-  console.log(`videoSrcHash:${data.entry.videoSrcHash}, video240Hash:${data.entry.video240Hash}, thiccHash:${dta.entry.thiccHash}`)
-  
+async function pinIpfsContent(data) {
+  const cids = [
+    data?.entry?.videoSrcHash, 
+    data?.entry?.video240Hash, 
+    data?.entry?.thiccHash
+  ]
+  const pins = await cluster.pinAdd(cids)
+  return pins
 }
 
 
@@ -104,21 +110,17 @@ fastify.post('/webhook', { schema }, async (request, reply) => {
   // const result = await collection.insertOne({ animal: request.body.animal })
   // return result
   const body = request?.body
-  console.log(body)
-  pinIpfsContent()
+  if (body === undefined) {
+    reply.code(400)
+    return {
+      message: 'body must be defined, but it was undefined'
+    }
+  }
+  const pins = await pinIpfsContent(body)
+  const discordChannel = client.channels.cache.get(process.env.DISCORD_CHATOPS_CHANNEL_ID);
+  discordChannel.send(`addPin task complete! ${pins}`);
   return {
-    message: 'hi'
+    message: `Pinned ${pins}`
   }
 })
 
-// fastify.post('/webhook', async function (request, reply) {
-//   reply.type('application/json')
-//   logger.log({ level: 'info', message: `/webhook visited` });
-//   const validationResult = isValidWebhook(request.body)
-//   if (!validationResult.valid) {
-//     return reply.code(400).send({ message: validationResult.message })
-//   }
-//   // Run your function with the valid webhook data
-//   myFunction(body)
-//   reply.send({ message: 'Webhook received successfully' })
-// })
