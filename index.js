@@ -5,10 +5,10 @@ Quality Assurance
   * [x] serve a webhook
   * [x] when webhook is hit, do a thing
   * [x] `ipfs pin add` the 
-  * [ ] videoSrcHash
-  * [ ] video240Hash
-  * [ ] thiccHash
-  * [ ] post message on Discord channel when task is accomplished
+  * [x] videoSrcHash
+  * [x] video240Hash
+  * [x] thiccHash
+  * [x] post message on Discord channel when task is accomplished
 
 */
 
@@ -77,14 +77,22 @@ fastify.listen({
 
 
 
-async function pinIpfsContent(data) {
+async function idempotentlyPinIpfsContent(data) {
+  let results = []
   const cids = [
     data?.entry?.videoSrcHash, 
     data?.entry?.video240Hash, 
     data?.entry?.thiccHash
   ]
-  const pins = await cluster.pinAdd(cids)
-  return pins
+  const validCids = cids.filter((c) => c !== '')
+  for (const vc of validCids) {
+    const pinCount = await cluster.getPinCount(cid)
+    if (pinCount < 1) {
+      const pinnedCid = await cluster.pinAdd(cids)
+      results.push(pinnedCid)
+    }
+  }
+  return results
 }
 
 
@@ -116,11 +124,17 @@ fastify.post('/webhook', { schema }, async (request, reply) => {
       message: 'body must be defined, but it was undefined'
     }
   }
-  const pins = await pinIpfsContent(body)
-  const discordChannel = client.channels.cache.get(process.env.DISCORD_CHATOPS_CHANNEL_ID);
-  discordChannel.send(`addPin task complete! ${pins}`);
-  return {
-    message: `Pinned ${pins}`
+  const pins = await idempotentlyPinIpfsContent(body)
+  if (pins.length > 0) {
+    const discordChannel = client.channels.cache.get(process.env.DISCORD_CHATOPS_CHANNEL_ID);
+    discordChannel.send(`addPin task complete! ${pins}`);
+    return {
+      message: `Pinned ${pins}`
+    }
+  } else {
+    return {
+      message: `Nothing to pin`
+    }
   }
 })
 
