@@ -84,7 +84,10 @@ async function idempotentlyPinIpfsContent(cluster, data) {
     data?.entry?.video240Hash, 
     data?.entry?.thiccHash
   ]
+  logger.log({ level: 'info', message: `Here are the CIDs yoinked fresh from the webhook:${JSON.stringify(cids)}` })
+
   const validCids = cids.filter((c) => c !== '' && c !== undefined)
+  logger.log({ level: 'info', message: `Here are the valid CIDs:${JSON.stringify(validCids)}` })
   if (validCids.length === 0) return results
   for (const vc of validCids) {
     const pinCount = await cluster.getPinCount(vc)
