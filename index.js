@@ -127,7 +127,10 @@ fastify.post('/webhook', { schema }, async (request, reply) => {
       message: 'body must be defined, but it was undefined'
     }
   }
+  logger.log({ level: 'info', message: `idempotentlyPinIpfsContent` })
   const pins = await idempotentlyPinIpfsContent(body)
+  logger.log({ level: 'info', message: `${JSON.stringify(pins)}` })
+  
   if (pins.length > 0) {
     const discordChannel = client.channels.cache.get(process.env.DISCORD_CHATOPS_CHANNEL_ID);
     discordChannel.send(`addPin task complete! ${pins}`);
