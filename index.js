@@ -133,7 +133,7 @@ fastify.post('/webhook', { schema }, async (request, reply) => {
   }
   logger.log({ level: 'info', message: `idempotentlyPinIpfsContent` })
   logger.log({ level: 'info', message: JSON.stringify(body) })
-  const pins = await idempotentlyPinIpfsContent(body)
+  const pins = await idempotentlyPinIpfsContent(cluster, body)
   logger.log({ level: 'info', message: `${JSON.stringify(pins)}` })
 
   if (pins.length > 0) {
