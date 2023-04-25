@@ -86,7 +86,7 @@ async function idempotentlyPinIpfsContent(cluster, data) {
   ]
   logger.log({ level: 'info', message: `Here are the CIDs yoinked fresh from the webhook:${JSON.stringify(cids)}` })
 
-  const validCids = cids.filter((c) => c !== '' && c !== undefined)
+  const validCids = cids.filter((c) => c !== '' && c !== null && c !== undefined)
   logger.log({ level: 'info', message: `Here are the valid CIDs:${JSON.stringify(validCids)}` })
   if (validCids.length === 0) return results
   for (const vc of validCids) {
