@@ -77,18 +77,19 @@ fastify.listen({
 
 
 
-async function idempotentlyPinIpfsContent(data) {
+async function idempotentlyPinIpfsContent(cluster, data) {
   let results = []
   const cids = [
     data?.entry?.videoSrcHash, 
     data?.entry?.video240Hash, 
     data?.entry?.thiccHash
   ]
-  const validCids = cids.filter((c) => c !== '')
+  const validCids = cids.filter((c) => c !== '' && c !== undefined)
+  if (validCids.length === 0) return results
   for (const vc of validCids) {
-    const pinCount = await cluster.getPinCount(cid)
+    const pinCount = await cluster.getPinCount(vc)
     if (pinCount < 1) {
-      const pinnedCid = await cluster.pinAdd(cids)
+      const pinnedCid = await cluster.pinAdd(vc)
       results.push(pinnedCid)
     }
   }
@@ -128,9 +129,10 @@ fastify.post('/webhook', { schema }, async (request, reply) => {
     }
   }
   logger.log({ level: 'info', message: `idempotentlyPinIpfsContent` })
+  logger.log({ level: 'info', message: JSON.stringify(body) })
   const pins = await idempotentlyPinIpfsContent(body)
   logger.log({ level: 'info', message: `${JSON.stringify(pins)}` })
-  
+
   if (pins.length > 0) {
     const discordChannel = client.channels.cache.get(process.env.DISCORD_CHATOPS_CHANNEL_ID);
     discordChannel.send(`addPin task complete! ${pins}`);

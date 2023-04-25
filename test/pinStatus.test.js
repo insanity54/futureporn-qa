@@ -11,8 +11,36 @@ async function main() {
     username: process.env.IPFS_CLUSTER_HTTP_API_USERNAME,
     password: process.env.IPFS_CLUSTER_HTTP_API_PASSWORD
   })
-  const statuses = await cluster.getPinCount('bafybeiclkyiomuru53rapmaekxyzyuiicc2ddtqx3el5pxaq2apqwdpnr4')
-  console.log(statuses)
+  // const statuses = await cluster.getPinCount('bafybeiclkyiomuru53rapmaekxyzyuiicc2ddtqx3el5pxaq2apqwdpnr4')
+  // console.log(statuses)
+  const eeeeee = await idempotentlyPinIpfsContent(cluster, {
+    entry: {
+      videoSrcHash: 'bafybeiclkyiomuru53rapmaekxyzyuiicc2ddtqx3el5pxaq2apqwdpnr4'
+    } 
+  })
+  console.log(eeeeee)
 }
+
+
+async function idempotentlyPinIpfsContent(cluster, data) {
+  let results = []
+  const cids = [
+    data?.entry?.videoSrcHash, 
+    data?.entry?.video240Hash, 
+    data?.entry?.thiccHash
+  ]
+  const validCids = cids.filter((c) => c !== '' && c !== undefined)
+  if (validCids.length === 0) return results
+  for (const vc of validCids) {
+    console.log(vc)
+    const pinCount = await cluster.getPinCount(vc)
+    if (pinCount < 1) {
+      const pinnedCid = await cluster.pinAdd(vc)
+      results.push(pinnedCid)
+    }
+  }
+  return results
+}
+
 
 main()
