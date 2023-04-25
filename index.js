@@ -113,6 +113,9 @@ const schema = {
 // When a new VOD is created, Strapi GETs the route
 // QA responds by adding the IPFS hash
 fastify.post('/webhook', { schema }, async (request, reply) => {
+
+  logger.log({ level: 'info', message: `Webhook was hit!` })
+
   reply.type('application/json')
   // we can use the `request.body` object to get the data sent by the client
   // const result = await collection.insertOne({ animal: request.body.animal })
@@ -128,10 +131,12 @@ fastify.post('/webhook', { schema }, async (request, reply) => {
   if (pins.length > 0) {
     const discordChannel = client.channels.cache.get(process.env.DISCORD_CHATOPS_CHANNEL_ID);
     discordChannel.send(`addPin task complete! ${pins}`);
+    logger.log({ level: 'info', message: `Pinned ${pins}` })
     return {
       message: `Pinned ${pins}`
     }
   } else {
+    logger.log({ level: 'info', message: `Nothing to pin!` })
     return {
       message: `Nothing to pin`
     }
