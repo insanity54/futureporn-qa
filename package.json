@@ -1,13 +1,15 @@
 {
   "name": "qa",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "main": "index.js",
   "license": "Unlicense",
   "private": true,
   "dependencies": {
+    "@11ty/eleventy-fetch": "^4.0.0",
     "discord.js": "^14.9.0",
     "dotenv": "^16.0.3",
     "fastify": "^4.11.0",
+    "fastq": "^1.15.0",
     "fluent-json-schema": "^4.1.0",
     "formdata-node": "^5.0.0",
     "got": "^12.6.0",
@@ -16,10 +18,15 @@
   "type": "module",
   "scripts": {
     "start": "node index",
-    "test": "mocha"
+    "test": "mocha",
+    "dev": "concurrently \"npm:tunnel\" \"npm:nodemon\"",
+    "tunnel": "wg-quick up ./tunnel.conf; echo 'press enter to close tunnel'; read _; wg-quick down ./tunnel.conf",
+    "nodemon": "nodemon --watch lib --watch .env --watch package.json --watch index.js index.js"
   },
   "devDependencies": {
     "chai": "^4.3.7",
-    "mocha": "^10.2.0"
+    "concurrently": "^8.0.1",
+    "mocha": "^10.2.0",
+    "nodemon": "^2.0.22"
   }
 }

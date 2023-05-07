@@ -15,7 +15,7 @@ async function main() {
   // console.log(statuses)
   const eeeeee = await idempotentlyPinIpfsContent(cluster, {
     entry: {
-      videoSrcHash: 'bafybeiclkyiomuru53rapmaekxyzyuiicc2ddtqx3el5pxaq2apqwdpnr4'
+      videoSrcHash: 'bafkreibsuow7tcfweysasilsslt2h3rlxa4deud43p7kx2fc25tw6urfcu'
     } 
   })
   console.log(eeeeee)
@@ -30,9 +30,9 @@ async function idempotentlyPinIpfsContent(cluster, data) {
     data?.entry?.thiccHash
   ]
   const validCids = cids.filter((c) => c !== '' && c !== undefined)
+  console.log(`Here are the valid CIDs:${JSON.stringify(validCids)}`)
   if (validCids.length === 0) return results
   for (const vc of validCids) {
-    console.log(vc)
     const pinCount = await cluster.getPinCount(vc)
     if (pinCount < 1) {
       const pinnedCid = await cluster.pinAdd(vc)
