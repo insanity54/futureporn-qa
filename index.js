@@ -23,13 +23,20 @@ import Cluster from './lib/Cluster.js'
 import S from 'fluent-json-schema'
 import { ipfsHashRegex } from './lib/constants.js'
 import fs from 'node:fs';
+import fastq from 'fastq'
 import { taskAllocateMux } from './lib/taskAllocateMux.js'
 import { taskPinIpfsContent } from './lib/taskPinIpfsContent.js'
-import fastq from 'fastq'
+import taskGenerateThumbnail from './lib/taskGenerateThumbnail.js'
+import taskDownloadVideoSrcB2 from './lib/taskDownloadVideoSrcB2.js'
+import taskAddVideoSrcHash from './lib/taskAddVideoSrcHash.js'
+import taskAddVideo240Hash from './lib/taskAddVideo240Hash.js'
+import taskTriggerWebsiteBuild from './lib/taskTriggerWebsiteBuild.js'
+
 
 
 const version = JSON.parse(fs.readFileSync('./package.json', { encoding: 'utf-8' })).version
 const appEnv = new Array(
+  'PORT',
   'NODE_ENV',
   'DISCORD_CLIENT_ID',
   'DISCORD_CLIENT_SECRET',
@@ -42,6 +49,12 @@ const appEnv = new Array(
   'MUX_TOKEN_SECRET',
   'STRAPI_URL',
   'STRAPI_API_KEY',
+  'B2_ENDPOINT',
+  'B2_BUCKET',
+  'B2_SECRET',
+  'B2_KEY',
+  'B2_REGION',
+  'TMPDIR'
 )
 
 
@@ -49,14 +62,6 @@ const logger = loggerFactory({
   service: 'futureporn/qa'
 })
 
-const appContext = {
-  env: appEnv.reduce((acc, ev) => {
-    if (typeof process.env[ev] === 'undefined') throw new Error(`${ev} is undefined in env`);
-    acc[ev] = process.env[ev];
-    return acc;
-  }, {}),
-  logger
-};
 
 const workQueue = fastq(tasks, 1)
 
@@ -69,19 +74,32 @@ const discordClient = new DiscordClient({ intents: [GatewayIntentBits.Guilds] })
 
 
 
-discordClient.on('ready', () => {
-  logger.log({ level: 'info', message: `Logged in as ${discordClient.user.tag}!` });
-});
-
-discordClient.login(process.env.DISCORD_BOT_TOKEN)
-
 const cluster = new Cluster({
   uri: 'https://cluster.sbtp.xyz:9094',
   username: process.env.IPFS_CLUSTER_HTTP_API_USERNAME,
   password: process.env.IPFS_CLUSTER_HTTP_API_PASSWORD
 })
 
+const appContext = {
+  env: appEnv.reduce((acc, ev) => {
+    if (typeof process.env[ev] === 'undefined') throw new Error(`${ev} is undefined in env`);
+    acc[ev] = process.env[ev];
+    return acc;
+  }, {}),
+  logger,
+  discordClient,
+  cluster,
+  changed: false, // tasks can true this to trigger a website build,
+  build: null, // later turned into a debounced function by taskTriggerWebsiteBuild
+};
 
+// const debouncedTrigger = debounce(() => dummyTriggerWebsiteBuild(appContext), 1000*60*30, { leading: true })
+
+discordClient.on('ready', () => {
+  logger.log({ level: 'info', message: `Logged in as ${discordClient.user.tag}!` });
+});
+
+discordClient.login(process.env.DISCORD_BOT_TOKEN)
 
 
 
@@ -98,15 +116,27 @@ const schema = {
 
 
 
-async function tasks (body) {
+/**
+ * WARNING-- All tasks must be idempotent in order to not cause an endless loop
+ *           If a task makes a change that should trigger a website build,
+ *           that task must set appContext.changed to true
+ */
+async function tasks (body, cb) {
   try {
-    await taskAllocateMux(appContext, body)
-    await taskPinIpfsContent(appContext, body, discordClient, cluster)
+    await taskAllocateMux(appContext)
+    await taskDownloadVideoSrcB2(appContext, body)
+    await taskGenerateThumbnail(appContext, body)
+    await taskPinIpfsContent(appContext, body)
+    await taskAddVideoSrcHash(appContext, body)
+    await taskAddVideo240Hash(appContext, body)
+    await taskTriggerWebsiteBuild(appContext)
   } catch (err) {
-    logger.error('Error while running QA tasks')
-    logger.error(err.message)
+    logger.log({ level: 'error', message: 'Error while running QA tasks' })
+    logger.log({ level: 'error', message: err.message })
     console.error(err)
   }
+  logger.log({ level: 'info', message: 'Tasks complete'})
+  cb(null, null)
 }
 
 
@@ -122,7 +152,6 @@ fastify.post('/webhook', { schema }, async (request, reply) => {
   // const result = await collection.insertOne({ animal: request.body.animal })
   // return result
   const body = request?.body
-  console.log(body)
   if (body === undefined) {
     reply.code(400)
     return {
@@ -130,10 +159,12 @@ fastify.post('/webhook', { schema }, async (request, reply) => {
     }
   }
 
+  logger.log({ level: 'info', message: 'Queuing tasks' })
   workQueue.push(body)
-
+  return {
+    message: 'ok'
+  }
 })
-
 
 
 
