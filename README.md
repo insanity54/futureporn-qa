@@ -2,15 +2,14 @@
 
 Quality Assurance
 
-home of Futureporn.net Discord Futurebot
+Home of Futureporn.net Discord Futurebutt [bot]
 
-## Feature
+## Features
 
-* [x] Implement webhook
-* [x] When Strapi record is updated, pin all CIDs
-* [ ] Be idempotent https://github.com/insanity54/futureporn/issues/160
-* [x] Post a message in Discord
-* [ ] Don't post empty message https://github.com/insanity54/futureporn/issues/159
+* [x] When a record in the DB is updated, run tasks.
+* [x] Triggered by Strapi create, update, and publish webhooks.
+* [x] Idempotent operation
+* [x] Posts messages in Discord
 
 
 ## dev notes
@@ -47,10 +46,3 @@ home of Futureporn.net Discord Futurebot
   }
 }
 ```
-
-
-## @todo
-
-delete the following IPFS (test) CIDs from the cluster
-
-* bafybeiatnb3t2n2njxhbyyaebsuoutsi3wcx6xxzlkjjdarsqp3yitfxae
