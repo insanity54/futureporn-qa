@@ -11,6 +11,9 @@ Home of Futureporn.net Discord Futurebutt [bot]
 * [x] Idempotent operation
 * [x] Posts messages in Discord
 
+## Issue tracker
+
+Please use https://github.com/insanity54/futureporn/issues
 
 ## dev notes
 
